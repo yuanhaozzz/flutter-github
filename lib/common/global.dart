@@ -3,7 +3,8 @@ int futureTask() {
 }
 
 class Global {
+  static String text = 'asdsda';
   static Future init() {
-    return new Future(futureTask);
+    return new Future(() => '');
   }
 }
