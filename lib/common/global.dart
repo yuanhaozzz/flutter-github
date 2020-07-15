@@ -4,7 +4,8 @@ int futureTask() {
 
 class Global {
   static String text = 'asdsda';
+  static String domain = 'www.baidu.com';
   static Future init() {
-    return new Future(() => '');
+    return new Future(() => {});
   }
 }
