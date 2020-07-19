@@ -1,26 +1,74 @@
-import 'package:flutter/cupertino.dart';
+import 'package:fluro/fluro.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
+
+import 'states/globle_state.dart';
+import 'routers/routes.dart';
+import 'routers/application.dart';
+
+import 'pages/home/home.dart';
 import 'common/global.dart';
 
 void main() {
-  Global.init().then((value) => {
-        runApp(ChangeNotifierProvider<Counter>.value(
-          value: Counter(1), //2
-          child: MainInit(),
-        ))
-      });
+  WidgetsFlutterBinding.ensureInitialized();
+  Global.init().then((value) => runApp(new MainInit()));
+//   return ;
 }
 
 class MainInit extends StatelessWidget {
+  MainInit() {
+    final router = new Router();
+    Routes.configureRoutes(router);
+    Application.router = router;
+  }
+  // 这里设置项目环境
+
   Widget build(BuildContext context) {
-    return new MaterialApp(
-      title: 'github',
-      home: new MainPageWidget(),
-      routes: <String, WidgetBuilder>{
-        '/first_page': (context) => new FirstPage(),
-        '/second_page': (context) => new SecondPage(),
-      },
+    return MultiProvider(
+      providers: <SingleChildCloneableWidget>[
+        ChangeNotifierProvider.value(value: UserModel()),
+        ChangeNotifierProvider.value(value: ThemeModel()),
+        ChangeNotifierProvider.value(value: LocaleModel()),
+      ],
+      child: Consumer2<ThemeModel, LocaleModel>(builder:
+          (BuildContext context, themeModel, localeModel, Widget child) {
+        return new MaterialApp(
+          title: 'init',
+          home: Home(),
+          theme: ThemeData(primarySwatch: themeModel.theme),
+          onGenerateRoute: Application.router.generator,
+          locale: localeModel.getLocale(),
+          //我们只支持美国英语和中文简体
+          supportedLocales: [
+            const Locale('en', 'US'), // 美国英语
+            const Locale('zh', 'CN'), // 中文简体
+            //其它Locales
+          ],
+          localizationsDelegates: [
+            // 本地化的代理类
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+          ],
+          localeResolutionCallback:
+              (Locale _locale, Iterable<Locale> supportedLocales) {
+            if (localeModel.getLocale() != null) {
+              //如果已经选定语言，则不跟随系统
+              return localeModel.getLocale();
+            } else {
+              Locale locale;
+              //APP语言跟随系统语言，如果系统语言不是中文简体或美国英语，
+              //则默认使用美国英语
+              if (supportedLocales.contains(_locale)) {
+                locale = _locale;
+              } else {
+                locale = Locale('en', 'US');
+              }
+              return locale;
+            }
+          },
+        );
+      }),
     );
   }
 }
@@ -28,87 +76,10 @@ class MainInit extends StatelessWidget {
 class MainPageWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return new Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Provider.of<Counter>(context, listen: false).add();
-        },
-        child: Icon(Icons.add),
-      ),
       appBar: new AppBar(
-        title: new Text('${Provider.of<Counter>(context).count}'),
+        title: new Text('init'),
       ),
-      body: new Center(
-        child: Column(
-          children: <Widget>[
-            Text('${Provider.of<Counter>(context).count}'),
-            RaisedButton(
-                onPressed: () {
-                  Navigator.of(context).pushNamed('/first_page');
-                },
-                child: Text('跳转')),
-          ],
-        ),
-      ),
+      body: new Center(),
     );
   }
-}
-
-class FirstPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return new Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Provider.of<Counter>(context, listen: false).add();
-        },
-        child: Icon(Icons.add),
-      ),
-      appBar: new AppBar(
-        title: Text('${Provider.of<Counter>(context).count}'),
-      ),
-      body: Center(
-        child: RaisedButton(
-          child: Text("${Provider.of<Counter>(context).count}"),
-          onPressed: () {
-            Navigator.pushNamed(context, "/page2");
-          },
-        ),
-      ),
-    );
-  }
-}
-
-class SecondPage extends StatelessWidget {
-  Widget build(BuildContext context) {
-    return new MaterialApp(
-        title: 'SecondPage',
-        home: new Scaffold(
-          floatingActionButton: FloatingActionButton(
-            onPressed: () {},
-            child: Icon(Icons.add),
-          ),
-          appBar: new AppBar(
-            title: Text('SecondPage'),
-          ),
-          body: RaisedButton(
-              onPressed: () {
-                Navigator.of(context).pushNamed('/SecondPage');
-              },
-              child: Text('跳转')),
-        ));
-  }
-}
-
-class Counter with ChangeNotifier {
-  //1
-  int _count;
-  Counter(this._count);
-
-  void add() {
-    _count++;
-    print('object');
-    notifyListeners(); //2
-  }
-
-  get count => _count; //3
 }
